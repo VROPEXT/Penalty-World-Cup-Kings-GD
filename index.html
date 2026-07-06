@@ -6,12 +6,47 @@
 <title>Penalty Kings</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4348266475610926"
      crossorigin="anonymous"></script>
+<script async src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
 <style>
   :root { --border: rgba(255,255,255,0.16); --text-muted:#94a3b8; }
   html, body { margin:0; width:100%; height:100%; background:#07111f; overflow:hidden; }
   body { min-height:100vh; min-height:100svh; }
   * { box-sizing:border-box; }
   .adsense-rail { display:none; }
+  .ima-video-ad-overlay {
+    position:fixed;
+    inset:0;
+    z-index:20000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(2,6,23,.92);
+  }
+  .ima-video-ad-box {
+    position:relative;
+    width:min(960px,100vw);
+    height:min(540px,100vh);
+    background:#000;
+    border:4px solid #111827;
+    box-shadow:0 18px 42px rgba(0,0,0,.45);
+  }
+  #ima-ad-container, #ima-content-video {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+  #ima-content-video { background:#000; }
+  .ima-loading-label {
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    color:#fff;
+    font:900 14px system-ui, -apple-system, sans-serif;
+    letter-spacing:1px;
+    pointer-events:none;
+  }
   @media (min-width:1180px) {
     body.adsense-enabled > #game-root-shell { width:calc(100vw - 180px) !important; max-width:calc(100vw - 180px) !important; }
     body.adsense-enabled #gc { width:100% !important; }
@@ -557,7 +592,7 @@
       @keyframes lobbyShine { 0%{ transform:translateX(-30%) translateY(-10%); } 100%{ transform:translateX(30%) translateY(10%); } }
     </style>
   </div>
-  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.9 - AdSense Display Test</p>
+  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.10 - IMA Video Ads Test</p>
 </div>
 <aside id="adsense-rail" class="adsense-rail" aria-label="Advertisement">
   <!-- VRoeaphids -->
@@ -568,6 +603,13 @@
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
 </aside>
+<div id="ima-video-ad-overlay" class="ima-video-ad-overlay" aria-label="Video advertisement">
+  <div id="ima-video-ad-box" class="ima-video-ad-box">
+    <video id="ima-content-video" playsinline webkit-playsinline muted></video>
+    <div id="ima-ad-container"></div>
+    <div id="ima-loading-label" class="ima-loading-label">LOADING VIDEO AD...</div>
+  </div>
+</div>
 <script>
   window.addEventListener('load', function(){
     try{ (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e){ console.log('AdSense display ad unavailable', e); }
@@ -578,6 +620,100 @@
       if(!ad.querySelector('iframe')) rail.style.display = 'none';
     }, 6500);
   });
+</script>
+<script>
+window.PENALTY_KINGS_IMA_TEST_AD_TAG = 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&correlator=';
+window.PenaltyKingsIMA = (function(){
+  let adDisplayContainer = null;
+  let adsLoader = null;
+  let adsManager = null;
+  let activeResolve = null;
+  let failTimer = null;
+
+  function getEls(){
+    return {
+      overlay: document.getElementById('ima-video-ad-overlay'),
+      container: document.getElementById('ima-ad-container'),
+      video: document.getElementById('ima-content-video'),
+      label: document.getElementById('ima-loading-label'),
+      box: document.getElementById('ima-video-ad-box')
+    };
+  }
+  function isReady(){
+    return !!(window.google && google.ima && document.getElementById('ima-ad-container'));
+  }
+  function finish(ok){
+    clearTimeout(failTimer);
+    failTimer = null;
+    const els = getEls();
+    if(adsManager){
+      try{ adsManager.destroy(); } catch(e){}
+      adsManager = null;
+    }
+    if(els.overlay) els.overlay.style.display = 'none';
+    if(els.label) els.label.style.display = 'block';
+    const resolve = activeResolve;
+    activeResolve = null;
+    if(resolve) resolve(!!ok);
+  }
+  function ensureLoader(){
+    const els = getEls();
+    if(!isReady() || !els.container || !els.video) return false;
+    if(!adDisplayContainer){
+      adDisplayContainer = new google.ima.AdDisplayContainer(els.container, els.video);
+    }
+    if(!adsLoader){
+      adsLoader = new google.ima.AdsLoader(adDisplayContainer);
+      adsLoader.addEventListener(google.ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED, function(event){
+        const els = getEls();
+        try{
+          adsManager = event.getAdsManager(els.video);
+          adsManager.addEventListener(google.ima.AdEvent.Type.CONTENT_PAUSE_REQUESTED, function(){
+            if(els.label) els.label.style.display = 'none';
+          });
+          adsManager.addEventListener(google.ima.AdEvent.Type.ALL_ADS_COMPLETED, function(){ finish(true); });
+          adsManager.addEventListener(google.ima.AdEvent.Type.COMPLETE, function(){ finish(true); });
+          adsManager.addEventListener(google.ima.AdErrorEvent.Type.AD_ERROR, function(e){
+            console.log('IMA ad manager error', e && e.getError ? e.getError().toString() : e);
+            finish(false);
+          });
+          const rect = els.box.getBoundingClientRect();
+          adsManager.init(Math.max(320, Math.floor(rect.width)), Math.max(180, Math.floor(rect.height)), google.ima.ViewMode.NORMAL);
+          adsManager.start();
+        } catch(e){
+          console.log('IMA ad start failed', e);
+          finish(false);
+        }
+      }, false);
+      adsLoader.addEventListener(google.ima.AdErrorEvent.Type.AD_ERROR, function(e){
+        console.log('IMA ad loader error', e && e.getError ? e.getError().toString() : e);
+        finish(false);
+      }, false);
+    }
+    return true;
+  }
+  function requestAd(){
+    if(activeResolve) return Promise.resolve(false);
+    if(!ensureLoader()) return Promise.resolve(false);
+    const els = getEls();
+    return new Promise(function(resolve){
+      activeResolve = resolve;
+      els.overlay.style.display = 'flex';
+      if(els.label) els.label.style.display = 'block';
+      try{ adDisplayContainer.initialize(); } catch(e){}
+      const rect = els.box.getBoundingClientRect();
+      const req = new google.ima.AdsRequest();
+      req.adTagUrl = window.PENALTY_KINGS_IMA_TEST_AD_TAG + Date.now();
+      req.linearAdSlotWidth = Math.max(320, Math.floor(rect.width));
+      req.linearAdSlotHeight = Math.max(180, Math.floor(rect.height));
+      req.nonLinearAdSlotWidth = Math.max(320, Math.floor(rect.width));
+      req.nonLinearAdSlotHeight = 150;
+      failTimer = setTimeout(function(){ finish(false); }, 16000);
+      try{ adsLoader.requestAds(req); } catch(e){ console.log('IMA ad request failed', e); finish(false); }
+    });
+  }
+  return { isReady, requestAd };
+})();
 </script>
 
 <script>
@@ -1401,6 +1537,17 @@ window.GD_OPTIONS = null;
   function requestGDAd(type, opts){
     opts = opts || {};
     if(window.PENALTY_KINGS_PLATFORM === 'gd-games'){
+      if(window.PenaltyKingsIMA && window.PenaltyKingsIMA.isReady()){
+        window.PenaltyKingsIMA.requestAd(type).then(ok => {
+          if(ok && type === 'rewarded' && opts.onReward) opts.onReward();
+          if(opts.onComplete) opts.onComplete(!!ok, ok ? null : {code:'IMA_UNAVAILABLE'});
+          if(!ok && opts.onUnavailable) opts.onUnavailable();
+        }).catch(error => {
+          if(opts.onComplete) opts.onComplete(false, error);
+          if(opts.onError) opts.onError(error);
+        });
+        return true;
+      }
       if(opts.onUnavailable) opts.onUnavailable();
       return false;
     }
@@ -1976,8 +2123,8 @@ window.GD_OPTIONS = null;
     } else {
       t.textContent = 'ELIMINATED'; t.style.color = '#ef4444';
       if(window.PENALTY_KINGS_PLATFORM === 'gd-games'){
-        sub.textContent = 'No rewarded ads on this web build. Try the cup again from the lobby.';
-        setSecondChanceVisible(false);
+        sub.textContent = 'Watch a test video ad to retry this match.';
+        setSecondChanceVisible(!tourn.secondChanceUsed);
       } else {
         sub.textContent = tourn.secondChanceUsed ? 'Second chance already used. Better luck next time.' : 'Watch a rewarded ad to retry this match.';
         setSecondChanceVisible(!tourn.secondChanceUsed);
@@ -2085,7 +2232,7 @@ window.GD_OPTIONS = null;
       },
       onUnavailable: () => {
         if(!tourn) return;
-        if(sub) sub.textContent = 'Rewarded ad unavailable on this web build. The match can be replayed from the lobby.';
+        if(sub) sub.textContent = 'IMA video ad unavailable right now. The match can be replayed from the lobby.';
         if(btn) btn.disabled = false;
       },
       onError: (error) => {
