@@ -4,14 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Penalty Kings</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4348266475610926"
+     crossorigin="anonymous"></script>
 <style>
   :root { --border: rgba(255,255,255,0.16); --text-muted:#94a3b8; }
   html, body { margin:0; width:100%; height:100%; background:#07111f; overflow:hidden; }
   body { min-height:100vh; min-height:100svh; }
   * { box-sizing:border-box; }
+  .adsense-rail { display:none; }
+  @media (min-width:1180px) {
+    body.adsense-enabled > #game-root-shell { width:calc(100vw - 180px) !important; max-width:calc(100vw - 180px) !important; }
+    body.adsense-enabled #gc { width:100% !important; }
+    .adsense-rail {
+      display:block;
+      position:fixed;
+      top:12px;
+      right:10px;
+      width:160px;
+      min-height:600px;
+      z-index:40;
+      overflow:hidden;
+      background:#0b1220;
+      border:1px solid rgba(148,163,184,.25);
+      border-radius:8px;
+    }
+    .adsense-rail .adsbygoogle {
+      display:block;
+      width:160px;
+      min-height:600px;
+    }
+  }
 </style>
 </head>
-<body>
+<body class="adsense-enabled">
 <div id="game-root-shell" style="width:100vw; height:100vh; height:100svh; margin:0; padding:0;">
   <div id="gc" style="position:relative; width:100%; height:100%; background:#0a0e1a; border-radius:0; overflow:hidden; border:0; font-family: system-ui, -apple-system, sans-serif; user-select:none;">
     <canvas id="gcv" style="display:block; width:100%; height:100%;"></canvas>
@@ -532,8 +557,22 @@
       @keyframes lobbyShine { 0%{ transform:translateX(-30%) translateY(-10%); } 100%{ transform:translateX(30%) translateY(10%); } }
     </style>
   </div>
-  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.7 - GD.games Web Build</p>
+  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.8 - AdSense Display Test</p>
 </div>
+<aside id="adsense-rail" class="adsense-rail" aria-label="Advertisement">
+  <!-- VRoeaphids -->
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-4348266475610926"
+       data-ad-slot="7948638744"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+</aside>
+<script>
+  window.addEventListener('load', function(){
+    try{ (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e){ console.log('AdSense display ad unavailable', e); }
+  });
+</script>
 
 <script>
 /* Three.js r128 embedded for offline play. */
@@ -567,7 +606,8 @@ window.GD_OPTIONS = null;
     const viewH = Math.floor(viewport ? viewport.height : window.innerHeight);
     const top = Math.max(0, Math.round(rect.top));
     const left = Math.max(0, Math.round(rect.left));
-    const availableW = Math.max(320, viewW - left);
+    const adRailW = document.body && document.body.classList.contains('adsense-enabled') && viewW >= 1180 ? 180 : 0;
+    const availableW = Math.max(320, viewW - left - adRailW);
     const availableH = Math.max(360, viewH - top);
     shell.style.width = availableW + 'px';
     shell.style.height = availableH + 'px';
