@@ -24,9 +24,9 @@
       min-height:600px;
       z-index:40;
       overflow:hidden;
-      background:#0b1220;
-      border:1px solid rgba(148,163,184,.25);
-      border-radius:8px;
+      background:transparent;
+      border:0;
+      border-radius:0;
     }
     .adsense-rail .adsbygoogle {
       display:block;
@@ -557,7 +557,7 @@
       @keyframes lobbyShine { 0%{ transform:translateX(-30%) translateY(-10%); } 100%{ transform:translateX(30%) translateY(10%); } }
     </style>
   </div>
-  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.8 - AdSense Display Test</p>
+  <p style="font-size:12px; color:var(--text-muted); margin-top:8px; text-align:center;">v10.9 - AdSense Display Test</p>
 </div>
 <aside id="adsense-rail" class="adsense-rail" aria-label="Advertisement">
   <!-- VRoeaphids -->
@@ -571,6 +571,12 @@
 <script>
   window.addEventListener('load', function(){
     try{ (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e){ console.log('AdSense display ad unavailable', e); }
+    setTimeout(function(){
+      var rail = document.getElementById('adsense-rail');
+      var ad = rail && rail.querySelector('.adsbygoogle');
+      if(!rail || !ad) return;
+      if(!ad.querySelector('iframe')) rail.style.display = 'none';
+    }, 6500);
   });
 </script>
 
@@ -1969,8 +1975,13 @@ window.GD_OPTIONS = null;
       btnContinue.textContent = 'CONTINUE';
     } else {
       t.textContent = 'ELIMINATED'; t.style.color = '#ef4444';
-      sub.textContent = tourn.secondChanceUsed ? 'Second chance already used. Better luck next time.' : 'Watch a rewarded ad to retry this match.';
-      setSecondChanceVisible(!tourn.secondChanceUsed);
+      if(window.PENALTY_KINGS_PLATFORM === 'gd-games'){
+        sub.textContent = 'No rewarded ads on this web build. Try the cup again from the lobby.';
+        setSecondChanceVisible(false);
+      } else {
+        sub.textContent = tourn.secondChanceUsed ? 'Second chance already used. Better luck next time.' : 'Watch a rewarded ad to retry this match.';
+        setSecondChanceVisible(!tourn.secondChanceUsed);
+      }
       btnContinue.textContent = 'BACK TO LOBBY';
     }
     tourn.wonMatch = finalWon;
